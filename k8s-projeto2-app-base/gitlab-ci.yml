@@ -1,0 +1,30 @@
+stages:
+  - build
+  - deploy_gcp
+
+build_images:
+  stage: build
+  image: docker:20.10.16
+
+  services:
+    - docker:20.10.16-dind
+  
+  variables: 
+    DOCKER_TLS_CERTDIR: "/certs"
+
+  before_script:
+    - docker login -u $REGISTRY_USER -p $REGISTRY_PASS
+
+  script:
+    - docker build -t denilsonbonatti/kubernetes-projeto2-dio:1.0 app/.
+    - docker push denilsonbonatti/kubernetes-projeto2-dio:1.0
+
+deploy_gcp:
+
+  stage: deploy_gcp
+
+  before_script:
+    - chmod 400 $SSH_KEY
+  
+  script:
+      - ssh -o StrictHostKeyChecking=no -i $SSH_KEY gcp@$SSH_SERVER "sudo rm -Rf ./kubernetes-projeto2-dio/ && sudo git clone https://gitlab.com/denilsonbonatti/kubernetes-projeto2-dio.git && cd kubernetes-projeto2-dio && sudo chmod +x ./script.sh && ./script.sh"
